@@ -25,7 +25,7 @@ streamlit run app.py
 # Project Structure
 
 Object Detection/
-├── app.py           # Streamlit web application
-├── model.py         # YOLO object detection model
-├── requirements.txt # Python dependencies
-└── README.md        # Project documentation
+* app.py           # Streamlit web application
+* model.py         # YOLO object detection model
+* requirements.txt # Python dependencies
+* README.md        # Project documentation
