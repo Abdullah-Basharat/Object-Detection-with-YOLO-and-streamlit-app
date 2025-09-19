@@ -4,6 +4,7 @@ from ultralytics import YOLO
 from typing import List, Tuple, Optional
 import tempfile
 import os
+import subprocess
 
 
 class ObjectDetector:
@@ -143,14 +144,20 @@ class ObjectDetector:
         if output_path is None:
             output_path = tempfile.mktemp(suffix='_detected.mp4')
         
-        # Use H.264 codec for better browser compatibility
-        fourcc = cv2.VideoWriter_fourcc(*'avc1')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (new_width, new_height))
+        # Try multiple codecs for Streamlit Cloud compatibility
+        codecs = ['mp4v', 'XVID', 'MJPG']
+        out = None
         
-        # Fallback if codec doesn't work
-        if not out.isOpened():
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        for codec in codecs:
+            fourcc = cv2.VideoWriter_fourcc(*codec)
             out = cv2.VideoWriter(output_path, fourcc, fps, (new_width, new_height))
+            if out.isOpened():
+                break
+            else:
+                out.release()
+        
+        if not out or not out.isOpened():
+            raise RuntimeError("Could not initialize video writer with any codec")
         
         try:
             frame_count = 0
@@ -180,7 +187,14 @@ class ObjectDetector:
             cap.release()
             out.release()
         
-        return output_path
+        # Convert to web-compatible format
+        web_compatible_path = self._convert_to_web_format(output_path)
+        
+        # Clean up original if different from web-compatible
+        if web_compatible_path != output_path and os.path.exists(output_path):
+            os.unlink(output_path)
+        
+        return web_compatible_path
     
         """
         Detect objects from webcam for a specified duration.
@@ -230,6 +244,24 @@ class ObjectDetector:
             out.release()
         
         return output_path
+    
+    def _convert_to_web_format(self, input_path: str) -> str:
+        """Convert video to web-compatible format using ffmpeg."""
+        try:
+            output_path = tempfile.mktemp(suffix='_web_compatible.mp4')
+            cmd = [
+                'ffmpeg', '-i', input_path,
+                '-c:v', 'libx264',
+                '-c:a', 'aac',
+                '-movflags', '+faststart',
+                '-y',  # Overwrite output file
+                output_path
+            ]
+            subprocess.run(cmd, check=True, capture_output=True)
+            return output_path
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # If ffmpeg fails, return original file
+            return input_path
     
     def set_confidence_threshold(self, threshold: float):
         """
