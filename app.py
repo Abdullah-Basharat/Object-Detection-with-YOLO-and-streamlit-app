@@ -1,10 +1,19 @@
 import streamlit as st
-import cv2
 import numpy as np
 from PIL import Image
 import tempfile
 import os
-from model import ObjectDetector
+
+# Handle OpenCV import for Streamlit Cloud
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError as e:
+    st.error(f"OpenCV import failed: {e}")
+    CV2_AVAILABLE = False
+
+if CV2_AVAILABLE:
+    from model import ObjectDetector
 
 
 def main():
@@ -19,6 +28,11 @@ def main():
     
     # Title
     st.title("🔍 Object Detection")
+    
+    # Check if OpenCV is available
+    if not CV2_AVAILABLE:
+        st.error("OpenCV is not available. Please check the deployment configuration.")
+        st.stop()
     
     # Initialize detector
     @st.cache_resource
