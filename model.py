@@ -184,55 +184,6 @@ class ObjectDetector:
         
         return output_path
     
-        """
-        Detect objects from webcam for a specified duration.
-        
-        Args:
-            duration: Duration in seconds
-            
-        Returns:
-            Path to the output video
-        """
-        # Open webcam
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            raise ValueError("Could not open webcam")
-        
-        # Get webcam properties
-        fps = 30
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
-        # Set up output video
-        output_path = tempfile.mktemp(suffix='_webcam_detected.mp4')
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
-        frame_count = 0
-        max_frames = duration * fps
-        
-        try:
-            while frame_count < max_frames:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                # Run detection
-                results = self.model(frame)
-                
-                # Draw detections
-                annotated_frame = self._draw_detections(frame, results)
-                
-                # Write frame
-                out.write(annotated_frame)
-                frame_count += 1
-        
-        finally:
-            cap.release()
-            out.release()
-        
-        return output_path
-    
     def set_confidence_threshold(self, threshold: float):
         """
         Set the confidence threshold for detections.
